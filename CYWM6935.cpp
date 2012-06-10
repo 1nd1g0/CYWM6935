@@ -5,11 +5,13 @@
  *                 Based on the code written by Miguel A. Vallejo and Jason Hecker
  * Author       :  Richard Ulrich <richi@paraeasy.ch>
  * License      :  GPL v. 3
+ * updates      :  Ported to Arduino 1.0.1
+ *		   Leigh L. Klotz, Jr. WA5ZNU
 */
 
 #include "CYWM6935.h"
 // arduino
-#include <WProgram.h>
+#include <Arduino.h>
 #include <util/delay.h>
 // stdlib
 #include <stdio.h>
@@ -47,8 +49,8 @@ void CYWM6935::init()
 const uint8_t CYWM6935::Read(const RADIO_REGISTERS address) const
 {    
     digitalWrite(pinChipSel_, LOW);         // Enable module    
-    Spi.transfer(address);                  // Send address    
-    const uint8_t val = Spi.transfer(0x00); // Receive data    
+    SPI.transfer(address);                  // Send address    
+    const uint8_t val = SPI.transfer(0x00); // Receive data    
     digitalWrite(pinChipSel_, HIGH);        // Disable module
     
     return val;
@@ -57,8 +59,8 @@ const uint8_t CYWM6935::Read(const RADIO_REGISTERS address) const
 void CYWM6935::Write(const RADIO_REGISTERS address, const uint8_t value) const
 {    
     digitalWrite(pinChipSel_, LOW);  // Enable module    
-    Spi.transfer(0x80 | address);    // Send data
-    Spi.transfer(value);             // Send data
+    SPI.transfer(0x80 | address);    // Send data
+    SPI.transfer(value);             // Send data
     digitalWrite(pinChipSel_, HIGH); // Disable module
 }
 

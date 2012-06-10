@@ -12,12 +12,13 @@
  *
  * Credit       :  Miguel A. Vallejo and Jason Hecker
  * License      :  GPL v. 3
+ * Updates      :  Ported to Arduino 1.0.1 Leigh L. Klotz, Jr. WA5ZNU
  */
 
 #ifndef _CYWM6935_H_
 #define _CYWM6935_H_
 
-#include "Spi.h"
+#include "SPI.h"
 #include <avr/pgmspace.h>
 #include <stdint.h>
 
@@ -75,6 +76,7 @@ private:
     
     const uint8_t pinReset_;    // active low reset
     const uint8_t pinChipSel_;  // chip select
+
 };
 
 #endif //  _CYWM6935_H_
