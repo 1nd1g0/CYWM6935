@@ -31,6 +31,8 @@ public:
     
     void init();
     const uint8_t RSSI(const uint8_t channel) const;
+    const uint8_t RSSI_peak(const uint8_t channel, const uint8_t count) const;
+    const uint8_t RSSI_avg(const uint8_t channel, const uint8_t count) const;
 
 private:    
     enum RADIO_REGISTERS

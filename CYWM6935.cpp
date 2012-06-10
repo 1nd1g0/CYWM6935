@@ -9,6 +9,7 @@
  *              :  Use 0x0F instead of 0x1F as RSSI mask to match empirical results.
  *              :  Changed init to follow Cypress application note.
  *              :  Changed RSSI to follow Cypress application note.
+ *              :  Added RSSI_peak and RSSI_avg.
  *		   Leigh L. Klotz, Jr. WA5ZNU
 */
 
@@ -121,4 +122,71 @@ const uint8_t CYWM6935::RSSI(const uint8_t channel) const
     Write(REG_CONTROL,0x00);     // Turn receiver off    
     
     return (value & RSSI_MASK); // Return lower n bits
+}
+
+// This function returns the peak of n readings.
+// Returns RSSI (0..15) for given channel
+const uint8_t CYWM6935::RSSI_peak(const uint8_t channel, const uint8_t count) const
+{    
+  Write(REG_CHANNEL, channel);       // Set channel    
+  Write(REG_CONTROL, 0x80);          // Turn receiver on
+  // Wait for receiver to start-up
+  // SYNTH_SETTLE (200) + RECEIVER_READY (35) + RSSI_ADC_CONVERSION (50)
+  delayMicroseconds(285);
+  Write(REG_CARRIER_DETECT, 0x00);  // clear override
+
+  uint8_t value = 0;
+  for (uint8_t i = 0; i < count; i++) {
+    while (1) {
+      uint8_t v = Read(REG_RSSI);  // Read RSSI
+      if ((v & 0x20) == 0) {
+	Write(REG_CARRIER_DETECT, 0x80);  // set override
+	delayMicroseconds(50);   // RSSI_ADC_CONVERSION (50)
+	v = Read(REG_RSSI);  // Read RSSI
+	Write(REG_CARRIER_DETECT, 0x00);  // clear override 
+      } else {
+	v = v & RSSI_MASK;
+	if (v > value) value = v;
+	break;
+      }
+    }
+  }
+
+
+  Write(REG_CONTROL,0x00);     // Turn receiver off    
+    
+  return value;
+}
+
+
+// This function returns the average of count readings.
+const uint8_t CYWM6935::RSSI_avg(const uint8_t channel, const uint8_t count) const
+{    
+  Write(REG_CHANNEL, channel);       // Set channel    
+  Write(REG_CONTROL, 0x80);          // Turn receiver on
+  // Wait for receiver to start-up
+  // SYNTH_SETTLE (200) + RECEIVER_READY (35) + RSSI_ADC_CONVERSION (50)
+  delayMicroseconds(285);
+  Write(REG_CARRIER_DETECT, 0x00);  // clear override
+
+  uint16_t sum = 0;
+  for (uint8_t i = 0; i < count; i++) {
+    while (1) {
+      uint8_t v = Read(REG_RSSI);  // Read RSSI
+      if ((v & 0x20) == 0) {
+	Write(REG_CARRIER_DETECT, 0x80);  // set override
+	delayMicroseconds(50);   // RSSI_ADC_CONVERSION (50)
+	v = Read(REG_RSSI);  // Read RSSI
+	Write(REG_CARRIER_DETECT, 0x00);  // clear override 
+      } else {
+	sum += v & RSSI_MASK;
+	break;
+      }
+    }
+  }
+
+
+  Write(REG_CONTROL,0x00);     // Turn receiver off    
+    
+  return (sum / count);
 }
