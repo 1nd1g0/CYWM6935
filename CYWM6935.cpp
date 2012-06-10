@@ -7,6 +7,8 @@
  * License      :  GPL v. 3
  * Updates      :  Ported to Arduino 1.0.1
  *              :  Use 0x0F instead of 0x1F as RSSI mask to match empirical results.
+ *              :  Changed init to follow Cypress application note.
+ *              :  Changed RSSI to follow Cypress application note.
  *		   Leigh L. Klotz, Jr. WA5ZNU
 */
 
@@ -43,11 +45,14 @@ void CYWM6935::init()
     delay(1);
     
     // initialize the radio module
+    Write(REG_ANALOG_CTL,   0x01);	
+    delayMicroseconds(50);
     Write(REG_CLOCK_MANUAL, 0x41);
     Write(REG_CLOCK_ENABLE, 0x41);
     Write(REG_ANALOG_CTL,   0x44);	
     Write(REG_CRYSTAL_ADJ,  0x40);
     Write(REG_VCO_CAL,      0xC0);
+    Write(REG_SYN_LOCK_CNT, 0xFF);
 }
 
 const uint8_t CYWM6935::Read(const RADIO_REGISTERS address) const
@@ -68,6 +73,26 @@ void CYWM6935::Write(const RADIO_REGISTERS address, const uint8_t value) const
     digitalWrite(pinChipSel_, HIGH); // Disable module
 }
 
+// From http://www.cypress.com/?docID=24401
+//
+// To check for a quiet channel before transmitting:
+// 1. First set up receive mode properly and read the RSSI register (Reg 0x22). 
+// 2. If the valid bit is zero, then force the Carrier Detect register
+//    (Reg // 0x2F, bit 7=1) to initiate an ADC conversion.
+// 3. Then, wait greater than 50 μs and read the RSSI register again. 
+// 4. Next, clear the Carrier Detect Register (Reg 0x2F, bit 7=0) and turn the receiver OFF. 
+//
+// Measuring the noise floor of a quiet channel is inherently a
+// 'noisy' process so, for best results, this procedure should be
+// repeated several times (~20) to compute an average noise floor
+// level.
+//
+// A RSSI register value of 0-10 indicates a channel that is
+// relatively quiet. A RSSI register value greater than 10 indicates
+// the channel is probably being used. A RSSI register value greater
+// than 28 indicates the presence of a strong signal.  
+//
+
 // This function returns an instantaneous reading. 
 const uint8_t CYWM6935::RSSI(const uint8_t channel) const
 {    
@@ -76,25 +101,24 @@ const uint8_t CYWM6935::RSSI(const uint8_t channel) const
     // Wait for receiver to start-up
     // SYNTH_SETTLE (200) + RECEIVER_READY (35) + RSSI_ADC_CONVERSION (50)
     delayMicroseconds(285);
+    Write(REG_CARRIER_DETECT, 0x00);  // clear override
     
     uint8_t value = 0;
     while(true)
     {
-        // Force conversion
-	Write(REG_CARRIER_DETECT, 0x00);
-	Write(REG_CARRIER_DETECT, 0x80);
-	
-	delayMicroseconds(50);   // RSSI_ADC_CONVERSION (50)	
-	value = Read(REG_RSSI);  // Read RSSI	
-	if(value & 0x20)         // Exit if valid
-            break;
+      value = Read(REG_RSSI);  // Read RSSI
+      if ((value & 0x20) == 0) {
+	Write(REG_CARRIER_DETECT, 0x80);  // set override
+	delayMicroseconds(50);   // RSSI_ADC_CONVERSION (50)
+	value = Read(REG_RSSI);  // Read RSSI
+	Write(REG_CARRIER_DETECT, 0x00);  // clear override 
+      } else {
+	value = value & RSSI_MASK;
+	break;
+      }
     }
 
     Write(REG_CONTROL,0x00);     // Turn receiver off    
     
     return (value & RSSI_MASK); // Return lower n bits
 }
-
-
-    
-
