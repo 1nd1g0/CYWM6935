@@ -5,7 +5,8 @@
  *                 Based on the code written by Miguel A. Vallejo and Jason Hecker
  * Author       :  Richard Ulrich <richi@paraeasy.ch>
  * License      :  GPL v. 3
- * updates      :  Ported to Arduino 1.0.1
+ * Updates      :  Ported to Arduino 1.0.1
+ *              :  Use 0x0F instead of 0x1F as RSSI mask to match empirical results.
  *		   Leigh L. Klotz, Jr. WA5ZNU
 */
 
@@ -16,6 +17,9 @@
 // stdlib
 #include <stdio.h>
 
+// On two WA5ZNU development boards, I always get the 0x10 bit set, so
+// use 0x0F instead of 0x1F as mask and get 0x00-0x0F results instead of 0x00-0x1F.
+#define RSSI_MASK 0x0F
 
 CYWM6935::CYWM6935(const uint8_t pinReset, const uint8_t pinChipSel)
   : pinReset_(pinReset), pinChipSel_(pinChipSel)
@@ -64,7 +68,7 @@ void CYWM6935::Write(const RADIO_REGISTERS address, const uint8_t value) const
     digitalWrite(pinChipSel_, HIGH); // Disable module
 }
 
-// Returns RSSI (0..31) for given channel
+// This function returns an instantaneous reading. 
 const uint8_t CYWM6935::RSSI(const uint8_t channel) const
 {    
     Write(REG_CHANNEL, channel);       // Set channel    
@@ -88,7 +92,7 @@ const uint8_t CYWM6935::RSSI(const uint8_t channel) const
 
     Write(REG_CONTROL,0x00);     // Turn receiver off    
     
-    return (value & 0x1F);       // Return lower 5 bits
+    return (value & RSSI_MASK); // Return lower n bits
 }
 
 
