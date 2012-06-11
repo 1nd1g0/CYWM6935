@@ -50,7 +50,6 @@ CYWM6935 radio(RADIO_RESET, RADIO_SS);
 void setup()   
 {
   Serial.begin(57600);
-  pinMode(SPI_SS, OUTPUT);
 
   SPI.begin();
   SPI.setClockDivider(CLOCK_RADIO);
