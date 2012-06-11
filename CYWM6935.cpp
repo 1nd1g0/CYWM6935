@@ -6,7 +6,6 @@
  * Author       :  Richard Ulrich <richi@paraeasy.ch>
  * License      :  GPL v. 3
  * Updates      :  Ported to Arduino 1.0.1
- *              :  Use 0x0F instead of 0x1F as RSSI mask to match empirical results.
  *              :  Changed init to follow Cypress application note.
  *              :  Changed RSSI to follow Cypress application note.
  *              :  Added RSSI_peak and RSSI_avg.
@@ -14,15 +13,9 @@
 */
 
 #include "CYWM6935.h"
-// arduino
 #include <Arduino.h>
-#include <util/delay.h>
-// stdlib
-#include <stdio.h>
 
-// On two WA5ZNU development boards, I always get the 0x10 bit set, so
-// use 0x0F instead of 0x1F as mask and get 0x00-0x0F results instead of 0x00-0x1F.
-#define RSSI_MASK 0x0F
+#define RSSI_MASK 0x1F
 
 CYWM6935::CYWM6935(const uint8_t pinReset, const uint8_t pinChipSel)
   : pinReset_(pinReset), pinChipSel_(pinChipSel)
